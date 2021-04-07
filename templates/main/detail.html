@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>detail</title>
+</head>
+<body>
+<form>
+    {% csrf_token %}
+    <p><b>Question</b> :- <b>{{question.question_text}}</b>
+    <h4>{{question.answer_set.all.count}} Answers</h4>
+    <hr>
+    {% for ans,com in imp %}
+    <p>Answer{{forloop.counter}} :- {{ans}}</p>
+    <h3>Comments:-</h3>
+        {%for comment in com %}
+            <p>Comment{{forloop.counter}} :- {{comment}}</p>
+        {%endfor%}
+    <hr>
+    {%endfor%}
+</form>
+</body>
+</html>
