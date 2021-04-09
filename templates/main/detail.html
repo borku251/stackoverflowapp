@@ -3,21 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <title>detail</title>
+    <style>
+        .box{
+        display:none;
+        }
+        .ab{
+        display:block;
+        }
+    </style>
 </head>
 <body>
-<form>
-    {% csrf_token %}
-    <p><b>Question</b> :- <b>{{question.question_text}}</b>
-    <h4>{{question.answer_set.all.count}} Answers</h4>
-    <hr>
-    {% for ans,com in imp %}
-    <p>Answer{{forloop.counter}} :- {{ans}}</p>
-    <h3>Comments:-</h3>
+
+<!--display specified question-->
+<p><b>Question</b> :- <b>{{question.question_text}}</b>
+<h4>{{question.answer_set.all.count}} Answers</h4>
+<hr>
+{% if imp %}
+
+<!--display answers-->
+{% for ans,com in imp %}
+<p>Answer{{forloop.counter}} :- {{ans}}</p>
+
+<!--display comments-->
+<h3>Comments:-</h3>
+    {%if com|length %}
         {%for comment in com %}
             <p>Comment{{forloop.counter}} :- {{comment}}</p>
         {%endfor%}
-    <hr>
-    {%endfor%}
+    {%else %}
+        <p>No comment</p>
+    {%endif %}
+<br>
+
+<!--To take comment input-->
+<button class="ab" onclick='fun({{forloop.counter0}})'>Add comment.</button>
+    <div class="box">
+        <form action="" method="post">{% csrf_token %}
+            <label for="a">Add comment :- </label>
+            <input type="text" name="comment" id="a" ></input>
+            <input type="hidden" name="answerid" value={{ans.id}}>
+            <input type="submit" value="Add comment"></input>
+        </form>
+    </div>
+<hr>
+{%endfor%}
+{% else %}
+<h3>No Answers yet.</h3>
+{%endif%}
+<br><br>
+
+<!--To take answer input-->
+
+<form action="" method="post">{% csrf_token %}
+    <label for="q">Add answer :- </label>
+    <input type="text" name="ans" id="q"></input>
+    <input type="submit" value="Add Answer"></input>
 </form>
+
+<script type="text/javascript">
+    function fun(a){
+        for(i=0;i<document.getElementsByClassName("ab").length;i++){
+        if(i==a){
+                var c=document.getElementsByClassName("ab")[i].style.display="none";
+                document.getElementsByClassName("box")[i].style.display="block";
+        }
+        else{
+                document.getElementsByClassName("ab")[i].style.display ="block";
+                document.getElementsByClassName("box")[i].style.display ="none";
+        }
+        }
+        }
+</script>
 </body>
 </html>

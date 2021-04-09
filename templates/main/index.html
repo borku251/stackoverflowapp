@@ -9,9 +9,14 @@
 {% if list %}
 <ul>
     {% for question in list %}
-    <li><a href="{% url 'main:detail' question.id %}">{{ question.question_text }}</a></li>
+    <li><a href="{% url 'main:detail' question.id %}">{{ question.question_text }}</a> <br>publish date = {{question.pub_date}}<br><br></li>
     {% endfor %}
 </ul>
+<form action="{% url 'main:index'%}" method="post">{% csrf_token %}
+    <label for="q">Add question :- </label>
+    <input type="text" name="quest" id="q"></input>
+    <input type="submit" value="Add a question"></input>
+</form>
 {% else %}
 <p>No questions are available.</p>
 {% endif %}
