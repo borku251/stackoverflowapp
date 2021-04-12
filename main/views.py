@@ -1,20 +1,27 @@
 from django.shortcuts import render,HttpResponseRedirect
+from django.http import HttpResponse
 from .models import question,answer,comment
 from django.http import Http404
 from django.urls import reverse
+from django.contrib.auth.models import User
+
 
 def index(request):
     if request.method == "POST":
-        if request.POST['quest']:
-            quests=request.POST['quest']
-            reg=question(question_text=quests)
-            reg.save()
-            return HttpResponseRedirect(reverse('main:index'))
+        if request.user.is_authenticated:
+            if request.POST['quest']:
+                current_user = request.user
+                quests=request.POST['quest']
+                des=request.POST['desc']
+                reg=question(user=User.objects.get(id=current_user.id),question_text=quests,description=des)
+                reg.save()
+                return HttpResponseRedirect(reverse('main:index'))
+        else:
+            return HttpResponseRedirect("/login/")
 
     latest_question_list = question.objects.all
     context = {'list': latest_question_list}
     return render(request, 'main/index.html', context)
-
 
 
 def detail(request, question_id):
@@ -22,35 +29,142 @@ def detail(request, question_id):
     #for answer
     if request.method == "POST":
         if request.POST.get('ans'):
-            p=request.POST.get('ans')
-            anss=answer(question=question.objects.get(id=question_id),answer_text=p)
-            anss.save()
-            return HttpResponseRedirect(reverse('main:detail', kwargs={'question_id':question_id}))
+            if request.user.is_authenticated:
+                    p=request.POST.get('ans')
+                    current_user = request.user
+                    anss=answer(user=User.objects.get(id=current_user.id),
+                    question=question.objects.get(id=question_id),
+                    answer_text=p,
+                    author_id=current_user.id)
+                    anss.save()
+                    return HttpResponseRedirect(reverse('main:detail', kwargs={'question_id':question_id}))
+            else:
+                    return HttpResponseRedirect("/login/")
 
 
     #for comment
         if request.POST.get('comment'):
-            c_id=request.POST.get('answerid')
-            p=request.POST.get('comment')
-            com=comment(answer=answer.objects.get(id=c_id),comments_text=p)
-            com.save()
-            return HttpResponseRedirect(reverse('main:detail', kwargs={'question_id':question_id}))
-
+            if request.user.is_authenticated:
+                    c_id=request.POST.get('answerid')
+                    p=request.POST.get('comment')
+                    current_user = request.user
+                    com=comment(user=User.objects.get(id=current_user.id),
+                    answer=answer.objects.get(id=c_id),
+                    comments_text=p,
+                    author_id=current_user.id)
+                    com.save()
+                    return HttpResponseRedirect(reverse('main:detail', kwargs={'question_id':question_id}))
+            else:
+                    return HttpResponseRedirect("/login/")
 
     comment_list=[]
     answer_list=[]
     try:
-        que = question.objects.get(id=question_id) # gives specifed question
-        for a in que.answer_set.all(): #returns the list of answers for the question
+        que = question.objects.get(id=question_id) # gives specified question
+        for a in que.answer_set.all(): #returns the list of answers for the questionnot object
             k=answer.objects.get(id=a.id) #gets the each answer object to get comments of each answer
+            name=User.objects.get(id=k.author_id).username #to fetch user name amswer
             for l in k.comment_set.all(): #returns a list of comments of each answer
-                comment_list.append(l)
-            answer_list.append((a,comment_list))
+                    kl=comment.objects.get(id=l.id) #gets the each answer object to get comments of each answer
+                    name1=User.objects.get(id=kl.author_id).username #to fetch user name comment
+                    comment_list.append((kl,name1))
+            answer_list.append((a,name,comment_list))
             comment_list=[]
     except que.DoesNotExist:
         raise Http404("Question does not exist")
     return render(request, 'main/detail.html', {'question': que,
                                                 'imp':answer_list})
+
+
+
+#from django.contrib.auth.forms import UserCreationForm
+from django.contrib import messages
+from .forms import signup_form
+#signup form
+def registration_form(request):
+    if not request.user.is_authenticated:
+        if request.method =="POST":
+            fm=signup_form(request.POST)
+            if fm.is_valid():
+               fm.save()
+               messages.success(request,"Account created successfully")
+               return HttpResponseRedirect("/signup/")
+        else:
+            fm=signup_form()
+
+        return render(request,'main/signup.html',{'form':fm})
+
+    else:
+        return HttpResponseRedirect("/profile/")
+
+from django.contrib.auth import login,authenticate
+from django.contrib.auth import login as site_login
+from django.contrib.auth import logout as site_logout
+from django.contrib.auth.forms import AuthenticationForm
+
+def login(request):
+        if not request.user.is_authenticated:
+            if request.method =="POST":
+                fm=AuthenticationForm(request=request,data=request.POST)
+                if fm.is_valid():
+                   uname=request.POST["username"]
+                   upass=request.POST["password"]
+                   user=authenticate(username=uname,password=upass)
+                   if user is not None:
+                      site_login(request,user)
+                      messages.success(request,"Logged In successfully")
+                      return HttpResponseRedirect("/profile/")
+            else:
+                fm=AuthenticationForm()
+
+            return render(request,'main/login.html',{'form':fm})
+        else:
+            return HttpResponseRedirect("/profile/")
+
+def profile(request):
+    if request.user.is_authenticated:
+        return render(request,'main/profile.html',{'name':request.user})
+    else:
+        return HttpResponseRedirect("/login/")
+
+def logout(request):
+    if request.user.is_authenticated:
+        site_logout(request)
+        messages.success(request,"Logged Out successfully")
+        return HttpResponseRedirect("/login/")
+    else:
+        return HttpResponseRedirect("/profile/")
+
+def like(request,question_id):
+    if request.user.is_authenticated:
+        if request.POST.get('like'):
+              answer_id=request.POST['like']
+              p=answer.objects.get(id=answer_id)
+              p.votes=p.votes+1
+              p.save()
+              return HttpResponseRedirect(reverse('main:detail', kwargs={'question_id':question_id}))
+        p=question.objects.get(id=question_id)
+        p.votes=p.votes+1
+        p.save()
+        return HttpResponseRedirect(reverse('main:detail', kwargs={'question_id':question_id}))
+    else:
+        return HttpResponseRedirect("/profile/")
+
+def dislike(request,question_id):
+    if request.user.is_authenticated:
+        if request.POST.get('dislike'):
+            answer_id=request.POST['dislike']
+            p=answer.objects.get(id=answer_id)
+            p.votes=p.votes-1
+            p.save()
+            return HttpResponseRedirect(reverse('main:detail', kwargs={'question_id':question_id}))
+
+        p=question.objects.get(id=question_id)
+        p.votes=p.votes-1
+        p.save()
+        return HttpResponseRedirect(reverse('main:detail', kwargs={'question_id':question_id}))
+    else:
+        return HttpResponseRedirect("/profile/")
 
 
 

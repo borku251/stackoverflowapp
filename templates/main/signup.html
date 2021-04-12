@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Signup form</title>
+  <style>
+    .success{
+    color:red
+    }
+  </style>
+</head>
+<body>
+<form action="" method="post" novalidate >
+  {% csrf_token %}
+  <h3>Registeration</h3>
+  {% if form.non_field_errors %}
+  {% for error in form.non_field_errors %}
+  <p>{{error}}</p>
+  {%endfor%}
+  {%endif%}
+  {% for a in form %}
+  {{a.label_tag}} {{a}} {{a.errors|striptags}} <br><br>
+  {%endfor %}
+  <input type="submit" value="submit">
+</form>
+{% if messages %}
+  {% for m in messages %}
+      <small class="{{m.tags}}">{{m}}</small><br>
+  {% endfor %}
+{% endif %}
+<br>
+<a href="{% url 'main:index'%}">Click to Go to Home page</a><br><br>
+<a href="{% url 'main:login'%}">Click to Go to login page</a><br><br>
+<a href="{% url 'main:profile'%}">Click to Go to profile page</a><br><br>
+</body>
+</html>
