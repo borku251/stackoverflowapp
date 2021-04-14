@@ -1,6 +1,6 @@
 from django.shortcuts import render,HttpResponseRedirect
 from django.http import HttpResponse
-from .models import question,answer,comment
+from .models import question,answer,comment,question_comment
 from django.http import Http404
 from django.urls import reverse
 from django.contrib.auth.models import User
@@ -26,6 +26,21 @@ def index(request):
 
 def detail(request, question_id):
 
+    #for question_comment
+    if request.POST.get('question_com'):
+        if request.user.is_authenticated:
+            c_id=request.POST.get('q_id')
+            p=request.POST.get('question_com')
+            current_user = request.user
+            com=question_comment(user=User.objects.get(id=current_user.id),
+                        question=question.objects.get(id=question_id),
+                        comments_text=p,
+                        author_id=current_user.id)
+            com.save()
+            return HttpResponseRedirect(reverse('main:detail', kwargs={'question_id':question_id}))
+        else:
+            return HttpResponseRedirect("/login/")
+
     #for answer
     if request.method == "POST":
         if request.POST.get('ans'):
@@ -35,7 +50,8 @@ def detail(request, question_id):
                     anss=answer(user=User.objects.get(id=current_user.id),
                     question=question.objects.get(id=question_id),
                     answer_text=p,
-                    author_id=current_user.id)
+                    author_id=current_user.id,
+                    ques_id=question_id)
                     anss.save()
                     return HttpResponseRedirect(reverse('main:detail', kwargs={'question_id':question_id}))
             else:
@@ -59,9 +75,12 @@ def detail(request, question_id):
 
     comment_list=[]
     answer_list=[]
+    question_c=[]
     try:
         que = question.objects.get(id=question_id) # gives specified question
-        for a in que.answer_set.all(): #returns the list of answers for the questionnot object
+        l=que.answer_set.all()
+        proper=l.order_by('-is_verified','-votes')
+        for a in proper: #returns the list of answers for the questionnot object
             k=answer.objects.get(id=a.id) #gets the each answer object to get comments of each answer
             name=User.objects.get(id=k.author_id).username #to fetch user name amswer
             for l in k.comment_set.all(): #returns a list of comments of each answer
@@ -70,10 +89,17 @@ def detail(request, question_id):
                     comment_list.append((kl,name1))
             answer_list.append((a,name,comment_list))
             comment_list=[]
+
+        for b in que.question_comment_set.all():
+            k=question_comment.objects.get(id=b.id)
+            name=User.objects.get(id=k.author_id).username #to fetch user name amswer
+            question_c.append((k,name))
+
     except que.DoesNotExist:
         raise Http404("Question does not exist")
     return render(request, 'main/detail.html', {'question': que,
-                                                'imp':answer_list})
+                                                'imp':answer_list,
+                                                'ab':question_c})
 
 
 
@@ -122,8 +148,15 @@ def login(request):
             return HttpResponseRedirect("/profile/")
 
 def profile(request):
+    list=[]
     if request.user.is_authenticated:
-        return render(request,'main/profile.html',{'name':request.user})
+        k=User.objects.get(id=request.user.id)
+        for m in k.answer_set.all():
+             list.append(question.objects.get(id=m.ques_id))
+        value=set(list)
+        return render(request,'main/profile.html',{'name':request.user,
+                                                   'question':k.question_set.all(),
+                                                   'answer_que':value,})
     else:
         return HttpResponseRedirect("/login/")
 

@@ -17,6 +17,7 @@ class answer(models.Model):
     question = models.ForeignKey(question, on_delete=models.CASCADE)
     answer_text=models.CharField(max_length=500)
     author_id=models.IntegerField()
+    ques_id=models.IntegerField()
     votes=models.IntegerField(default=0)
     is_verified=models.IntegerField(default=0)
     def __str__(self):
@@ -25,6 +26,14 @@ class answer(models.Model):
 class comment(models.Model):
     user= models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     answer = models.ForeignKey(answer, on_delete=models.CASCADE)
+    comments_text = models.CharField(max_length=100)
+    author_id=models.IntegerField()
+    def __str__(self):
+        return self.comments_text
+
+class question_comment(models.Model):
+    user= models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    question= models.ForeignKey(question, on_delete=models.CASCADE)
     comments_text = models.CharField(max_length=100)
     author_id=models.IntegerField()
     def __str__(self):

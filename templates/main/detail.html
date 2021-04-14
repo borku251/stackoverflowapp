@@ -29,7 +29,24 @@
     <p><b>Question</b> :- <b>{{question.question_text}}</b></p>
 </div>
 <h4>Description</h4>
-<P>{{question.description}}</P><br>
+<P>{{question.description}}</P>
+<h4>{{ab|length}} Comments</h4>
+{%if ab %}
+    {% for n,m in ab %}
+    <p>{{m}} commented :- {{n}}</p>
+    {%endfor%}
+{%else %}
+    <p>No comment</p>
+{%endif %}
+
+<form action="" method="post">{% csrf_token %}
+    <label for="b">Add comment :- </label>
+    <input type="text" name="question_com" id="b" ></input>
+    <input type="hidden" name="q_id" value={{question.id}}>
+    <input type="submit" value="Add comment"></input>
+</form>
+
+
 <h4>{{question.answer_set.all.count}} Answers</h4>
 <hr>
 
@@ -107,6 +124,11 @@
         }
         }
         }
+    function fun1(){
+                var c=document.getElementsByClassName("ab").style.display="none";
+                document.getElementsByClassName("box")[i].style.display="block";
+
+    }
 </script>
 </body>
 </html>
